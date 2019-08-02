@@ -140,6 +140,9 @@ class Generator
             }
             $dateTime = new DateTime($string);
             return self::_dateTimeToXmlTimestamp($dateTime);
+        } catch (Throwable $e) {
+            // not a datetime
+            return false;
         } catch (Exception $e) {
             // not a datetime
             return false;

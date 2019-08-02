@@ -55,6 +55,11 @@ try {
 	 * since using sanitize_text_field() breaks Braintree parser
 	 */
 	$webhookNotification = Braintree_WebhookNotification::parse( $_POST['bt_signature'], $_POST['bt_payload'] );
+} catch ( Throwable $e ) {
+	$logstr[] = "Couldn't extract notification from payload: {$_REQUEST['bt_payload']}";
+	$logstr[] = "Error message: " . $e->getMessage();
+	
+	pmpro_braintreeWebhookExit();
 } catch ( Exception $e ) {
 	$logstr[] = "Couldn't extract notification from payload: {$_REQUEST['bt_payload']}";
 	$logstr[] = "Error message: " . $e->getMessage();

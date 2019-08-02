@@ -31,6 +31,9 @@
 
 	try {
 		Stripe\Stripe::setApiKey( pmpro_getOption( "stripe_secretkey" ) );
+	} catch ( Throwable $e ) {
+		$logstr .= "Unable to set API key for Stripe gateway: " . $e->getMessage();
+		pmpro_stripeWebhookExit();
 	} catch ( Exception $e ) {
 		$logstr .= "Unable to set API key for Stripe gateway: " . $e->getMessage();
 		pmpro_stripeWebhookExit();
@@ -58,6 +61,12 @@
 		{
 			global $pmpro_stripe_event;
 			$pmpro_stripe_event = Stripe_Event::retrieve($event_id);
+		}
+		catch(Throwable $e)
+		{
+			$logstr .= "Could not find an event with ID #" . $event_id . ". " . $e->getMessage();
+			pmpro_stripeWebhookExit();
+			//$pmpro_stripe_event = $post_event;			//for testing you may want to assume that the passed in event is legit
 		}
 		catch(Exception $e)
 		{
@@ -436,6 +445,11 @@
 			try {
 
 				$invoice = Stripe_Invoice::retrieve( $invoice_id );
+
+			
+			} catch (Throwable $e) {
+				error_log("Unable to fetch Stripe Invoice object: " . $e->getMessage());
+				$invoice = null;
 
 			} catch (Exception $e) {
 				error_log("Unable to fetch Stripe Invoice object: " . $e->getMessage());

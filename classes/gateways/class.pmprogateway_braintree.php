@@ -37,8 +37,20 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
                     Braintree_Configuration::environment( $environment );
                     Braintree_Configuration::merchantId( $merch_id );
                     Braintree_Configuration::publicKey( $pk );
-                    Braintree_Configuration::privateKey( $sk );
+										Braintree_Configuration::privateKey( $sk );
+										
+								} catch( Throwable $exception ) {
+                    global $msg;
+                    global $msgt;
+                    global $pmpro_braintree_error;
 
+                    error_log($exception->getMessage() );
+
+                        $pmpro_braintree_error = true;
+                        $msg                   = - 1;
+                        $msgt                  = sprintf( __( 'Attempting to load Braintree gateway: %s', 'paid-memberships-pro' ), $exception->getMessage() );
+										return false;
+										
                 } catch( Exception $exception ) {
                     global $msg;
                     global $msgt;
@@ -128,6 +140,26 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 			    try {
 				    $plans = Braintree_Plan::all();
 
+					} catch( Throwable $exception ) {
+
+						global $msg;
+						global $msgt;
+						global $pmpro_braintree_error;
+
+						if ( false == $pmpro_braintree_error ) {
+
+								$pmpro_braintree_error = true;
+							$msg                   = - 1;
+							$status = $exception->getMessage();
+
+							if ( !empty( $status)) {
+								$msgt = sprintf( __( "Problem loading plans: %s", "paid-memberships-pro" ), $status );
+							} else {
+									$msgt = __( "Problem accessing the Braintree Gateway. Please verify your PMPro Payment Settings (Keys, etc).", "paid-memberships-pro");
+												}
+						}
+
+						return false;
 			    } catch( Braintree\Exception $exception ) {
 
 			        global $msg;
@@ -148,7 +180,7 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 				    }
 
 			        return false;
-                }
+          }
 
                 // Save to local cache
                 if ( !empty( $plans ) ) {
@@ -623,6 +655,14 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 				  'customerId' => $this->customer->id
 				));
 			}
+			catch (Throwable $e)
+			{
+				//$order->status = "error";
+				$order->errorcode = true;
+				$order->error = "Error: " . $e->getMessage() . " (" . get_class($e) . ")";
+				$order->shorterror = $order->error;
+				return false;
+			}
 			catch (Exception $e)
 			{
 				//$order->status = "error";
@@ -638,12 +678,17 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 				$transaction_id = $response->transaction->id;
 				try {
 					$response = Braintree_Transaction::submitForSettlement( $transaction_id );
-				} catch ( Exception $exception ) {
+				} catch ( Throwable $exception ) {
 					$order->errorcode = true;
 					$order->error = "Error: " . $exception->getMessage() . " (" . get_class($exception) . ")";
 					$order->shorterror = $order->error;
 					return false;
-                }
+        } catch ( Exception $exception ) {
+					$order->errorcode = true;
+					$order->error = "Error: " . $exception->getMessage() . " (" . get_class($exception) . ")";
+					$order->shorterror = $order->error;
+					return false;
+        }
 
 				if($response->success)
 				{
@@ -754,11 +799,15 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 							try {
 								//update
 								$response = Braintree_Customer::update($customer_id, $update_array);
-                            } catch ( Exception $exception ) {
+							} catch ( Throwable $exception ) {
 								$order->error = sprintf( __("Failed to update customer: %s", 'paid-memberships-pro' ), $exception->getMessage() );
 								$order->shorterror = $order->error;
 								return false;
-                            }
+              } catch ( Exception $exception ) {
+								$order->error = sprintf( __("Failed to update customer: %s", 'paid-memberships-pro' ), $exception->getMessage() );
+								$order->shorterror = $order->error;
+								return false;
+              }
 
 						if($response->success)
 						{
@@ -774,6 +823,10 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 					}
 
 					return $this->customer;
+				}
+				catch (Throwable $e)
+				{
+					//assume no customer found
 				}
 				catch (Exception $e)
 				{
@@ -819,6 +872,12 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 						$order->shorterror = $order->error;
 						return false;
 					}
+				}
+				catch (Throwable $e)
+				{
+					$order->error = __("Error creating customer record with Braintree:", 'paid-memberships-pro' ) . $e->getMessage() . " (" . get_class($e) . ")";
+					$order->shorterror = $order->error;
+					return false;
 				}
 				catch (Exception $e)
 				{
@@ -935,6 +994,13 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 
 				$result = Braintree_Subscription::create($details);
 			}
+			catch (Throwable $e)
+			{
+				$order->error = sprint( __("Error subscribing customer to plan with Braintree: %s (%s)", 'paid-memberships-pro' ), $e->getMessage(), get_class($e) );
+				//return error
+				$order->shorterror = $order->error;
+				return false;
+			}
 			catch (Exception $e)
 			{
 				$order->error = sprint( __("Error subscribing customer to plan with Braintree: %s (%s)", 'paid-memberships-pro' ), $e->getMessage(), get_class($e) );
@@ -996,6 +1062,8 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 			
 				try {
 					$webhookNotification = Braintree_WebhookNotification::parse( $_POST['bt_signature'], $_POST['bt_payload'] );
+				} catch ( Throwable $e ) {
+					// Don't do anything
 				} catch ( \Exception $e ) {
 				    // Don't do anything
 				}
@@ -1020,6 +1088,12 @@ use Braintree\WebhookNotification as Braintree_WebhookNotification;
 				try
 				{
 					$result = Braintree_Subscription::cancel($order->subscription_transaction_id);
+				}
+				catch(Throwable $e)
+				{
+					$order->error = sprintf( __("Could not find the subscription. %s", 'paid-memberships-pro' ),  $e->getMessage() );
+					$order->shorterror = $order->error;
+					return false;	//no subscription found
 				}
 				catch(Exception $e)
 				{

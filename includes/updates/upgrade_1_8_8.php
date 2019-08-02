@@ -75,6 +75,8 @@ function pmpro_upgrade_1_8_8_ajax() {
 			if(!empty($order->Gateway->customer)) {
 				try {
 					$invoices = $order->Gateway->customer->invoices();
+				} catch(Throwable $e) {
+					//probably no invoices, stay quiet
 				} catch(Exception $e) {
 					//probably no invoices, stay quiet
 				}
@@ -83,6 +85,8 @@ function pmpro_upgrade_1_8_8_ajax() {
 				if(!empty($invoices)) {
 					try {
 						$invoice = $invoices->retrieve($order->payment_transaction_id);
+					} catch(Throwable $e) {
+						//probably no invoice, stay quiet
 					} catch(Exception $e) {
 						//probably no invoice, stay quiet
 					}
