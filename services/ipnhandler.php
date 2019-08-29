@@ -82,7 +82,7 @@ if ( $txn_type == "subscr_signup" ) {
 			}
 
 			//Check that the corresponding order has a $0 initial payment as well
-			if ( (float) $amount != (float) $morder->total ) {
+			if ( abs( (float) $amount - (float) $morder->total ) > 0.01 ) {
 				ipnlog( "ERROR: PayPal subscription #" . $_POST['subscr_id'] . " initial payment amount (" . $amount . ") is not the same as the PMPro order #" . $morder->code . " (" . $morder->total . ")." );
 			} else {
 				//update membership
@@ -127,7 +127,7 @@ if ( $txn_type == "subscr_payment" ) {
 				//TODO: We should maybe update the order to reflect the tax amount and new total
 			}
 			
-			if ( (float) $amount != (float) $morder->total ) {
+			if ( abs( (float) $amount - (float) $morder->total ) > 0.01 ) {
 				ipnlog( "ERROR: PayPal transaction #" . $_POST['tnx_id'] . " amount (" . $amount . ") is not the same as the PMPro order #" . $morder->code . " (" . $morder->total . ")." );
 			} else {
 				//update membership
@@ -177,7 +177,7 @@ if ( $txn_type == "web_accept" && ! empty( $item_number ) ) {
 			//TODO: We should maybe update the order to reflect the tax amount and new total
 		}
 				
-		if ( (float) $amount != (float) $morder->total ) {
+		if ( abs( (float) $amount - (float) $morder->total ) > 0.01 ) {
 			ipnlog( "ERROR: PayPal transaction #" . $_POST['txn_id'] . " amount (" . $amount . ") is not the same as the PMPro order #" . $morder->code . " (" . $morder->total . ")." );
 		} else {
 			//update membership
