@@ -21,7 +21,7 @@
 	$logstr = "";	//will put debug info here and write to inslog.txt
 
 	//validate?
-	if( ! pmpro_twocheckoutValidate() ) {
+	if( ! pmpro_twocheckoutINSValidate() ) {
 
 		inslog("(!!FAILED VALIDATION!!)");
 
@@ -224,7 +224,7 @@
 	/*
 		Validate the $_POST with TwoCheckout
 	*/
-	function pmpro_twocheckoutValidate() {
+	function pmpro_twocheckoutINSValidate() {
 		$params = array();
 		foreach ( $_REQUEST as $k => $v )
 			$params[$k] = $v;

@@ -76,6 +76,7 @@
 				'twocheckout_apipassword',
 				'twocheckout_accountnumber',
 				'twocheckout_secretword',
+				'twocheckout_ipnsecretkey',
 				'currency',
 				'use_ssl',
 				'tax_state',
@@ -148,6 +149,15 @@
 			<td>
 				<input type="text" name="twocheckout_secretword" size="60" value="<?php echo $values['twocheckout_secretword']?>" />
 				<br /><small><?php _e('Go to Account &raquo; Site Management. Look under Checkout Options to find the Secret Word.');?></small>
+			</td>
+		</tr>
+		<tr class="gateway gateway_twocheckout" <?php if($gateway != "twocheckout") { ?>style="display: none;"<?php } ?>>
+			<th scope="row" valign="top">
+				<label for="twocheckout_ipnsecretkey"><?php _e('IPN Secret Key', 'paid-memberships-pro' );?>:</label>
+			</th>
+			<td>
+				<input type="text" name="twocheckout_ipnsecretkey" size="60" value="<?php echo $values['twocheckout_ipnsecretkey']?>" />
+				<br /><small><?php _e('Go to Integrations > Webhooks & API. Look under IPN settings to find the Secret Key.');?></small>
 			</td>
 		</tr>
 		<tr class="gateway gateway_twocheckout" <?php if($gateway != "twocheckout") { ?>style="display: none;"<?php } ?>>

@@ -56,6 +56,13 @@ function pmpro_wp_ajax_twocheckout_ins()
 }
 add_action('wp_ajax_nopriv_twocheckout-ins', 'pmpro_wp_ajax_twocheckout_ins');
 add_action('wp_ajax_twocheckout-ins', 'pmpro_wp_ajax_twocheckout_ins');
+function pmpro_wp_ajax_twocheckout_ipn()
+{
+	require_once(dirname(__FILE__) . "/../services/twocheckout-ipn.php");	
+	exit;	
+}
+add_action('wp_ajax_nopriv_twocheckout-ipn', 'pmpro_wp_ajax_twocheckout_ipn');
+add_action('wp_ajax_twocheckout-ipn', 'pmpro_wp_ajax_twocheckout_ipn');
 function pmpro_wp_ajax_memberlist_csv()
 {
 	require_once(dirname(__FILE__) . "/../adminpages/memberslist-csv.php");	
