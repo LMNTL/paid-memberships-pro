@@ -27,18 +27,70 @@
 		echo("!!FAILED VALIDATION!!)");
 
 		//validation failed
-		exit;
+		twocheckout_ipnExit();
   }
 
-  
+  // set up some variables
+  $order_status = $_REQUEST['ORDER_STATUS'];
+  $order_info = isset($_REQUEST['IPN_PURCHASE_ORDER_INFO']) ? $_REQUEST['IPN_PURCHASE_ORDER_INFO'] : '';
+  $morder = new MemberOrder();
+  $morder->getMemberOrderByID( $_REQUEST['REFNOEXT'] );
+
+  if( empty( $morder->id ) )
+  {
+    error_log("Couldn't find order # " . $_REQUEST['REFNOEXT'] );
+    twocheckout_ipnExit();
+  }
+
+  // order pending
+  if( in_array( $order_status, array('PENDING', 'PURCHASE_PENDING', 'PENDING_APPROVAL') ) )
+  {
+    // order is pending, save some details
+    $morder->status = 'pending';
+    $morder->saveOrder();
+  }
+
+  // order complete
+  if( $order_status == 'COMPLETE' )
+  {
+    // is it a chargeback?
+    if( !empty($_REQUEST['CHARGEBACK_RESOLUTION']) || !empty($_REQUEST['CHARGEBACK_RESOLUTION']) )
+    {
+      /* .... */
+    }
+    else
+    {
+      // order was successful, save it and activate their membership
+      /* .... */
+    }
+  }
+
+  // order cancelled - note the single "L"
+  if( $order_status == 'CANCELED' )
+  {
+    // did we cancel it?
+    if( $order_info == 'CANCELED_API' )
+    {
+      error_log( "2checkout cancellation notification for order #" . $order->id );
+      twocheckout_ipnExit();
+    }
+    else
+    {
+      error_log( "2checkout cancelled order #" . $order->id . " order status: "  . $order_info);
+      //cancel their membership
+      /* .... */
+    }
+    
+  }
+
+  twocheckout_ipnExit();
   
   function pmpro_twocheckoutIPNValidate()
   {
 
-    //echo '<pre>';
     $secret_key = pmpro_getOption("twocheckout_ipnsecretkey");
-    error_log("Gift order: " . $_REQUEST['GIFT_ORDER']);
-    //PARAMETERS
+    
+    // parameters to calculate the MD5 hash for response
     $IPN_parameters = array(
       'GIFT_ORDER' => '',
       'SALEDATE' => '',
@@ -147,29 +199,34 @@
 
     foreach( $IPN_parameters as $key => $val )
     {
-      if( is_array( $val ) )
+      if( is_array( $val ) && isset( $_REQUEST[$key][0] ) )
       {
         $IPN_parameters[$key][0] = $_REQUEST[$key][0];
       }
-      else
+      elseif( isset( $_REQUEST[$key] ) )
+      {
         $IPN_parameters[$key] = $_REQUEST[$key];
+      }
+      else
+      {
+        //exit if the request is missing fields
+        return false;
+      }
     }
 
     //*********Base string for HMAC_MD5 calculation:*********
-    //echo "This is the base string for HMAC_MD5 calculation: ";
     $result = '';
     foreach ($IPN_parameters as $key => $val){
-        $result .= ArrayExpand((array)$val);
+        $result .= ArrayExpand( (array)$val );
     }
 
     //*********Calculated HMAC_MD5 signature:*********
-    $hash =  hmac($secret_key, $result);
+    $hash =  hmac( $secret_key, $result );
     
     //if the calculated hash isn't the same as the hash on the request, exit
     if( $hash != $_REQUEST['HASH'] )
       return false;
 
-    //*********Response:*********
     $IPN_parameters_response = array();
     $IPN_parameters_response['IPN_PID'] = $IPN_parameters['IPN_PID'];
     $IPN_parameters_response['IPN_PNAME'] = $IPN_parameters['IPN_PNAME'];
@@ -186,9 +243,12 @@
     $hash =  hmac($secret_key, $result_response);
     $link_params['HASH']=$hash;
 
+    // build the response
+    $response = "<EPAYMENT>" . htmlspecialchars($IPN_parameters_response['DATE'], ENT_QUOTES, 'UTF-8') ."|";
+    $response .= htmlspecialchars($hash, ENT_QUOTES, 'UTF-8') . "</EPAYMENT>";
 
-    //Expected response
-    echo "<EPAYMENT>" . $IPN_parameters_response['DATE'] ."|$hash</EPAYMENT>";
+    // send response to 2checkout so the IPN message is considered delivered
+    echo $response;
     return true;
   }
 
@@ -218,4 +278,15 @@
     $k_ipad = $key ^ $ipad ;
     $k_opad = $key ^ $opad;
     return md5($k_opad  . pack("H*",md5($k_ipad . $data)));
+  }
+
+  function twocheckout_ipnExit()
+  {
+    error_log( 'exiting twocheckout IPN script...' );
+    exit;
+  }
+
+  function twocheckout_getOrderDate( $date_string )
+  {
+    return $date_string;
   }
